@@ -1,56 +1,60 @@
 <template>
-  <div class="wrap">
-    <Form @add="create" />
-    <Posts @delete="remove" v-bind:posts='posts'/>
+  <div class="app">
+    <div class="bg-white h-[80vh] overflow-auto flex flex-col w-full max-w-xl mx-auto my-5 border-2 px-3 py-4 rounded-lg">
+      <div class="flex sticky top-0 left-0 right-0">
+        <button class="bg-white w-full px-3 py-4 border-2 border-b-0">Current</button>
+        <button class="bg-gray-500 w-full px-3 py-4 text-white">Done</button>
+      </div>
+      
+      <div class="bg-white flex my-4">
+        <input
+          class="border-2 px-3 py-4 border-solid rounded-lg w-full mr-3 outline-none focus:border-blue-600 hover:border-blue-600 border-blue-400"
+          @keydown.enter="add"
+          type="text"
+          v-model="newTask"
+        >
+        <button class="text-3xl text-white px-10 bg-blue-600 hover:bg-blue-800 duration-150 border-solid border-2 rounded-lg" @click="add">+</button>
+      </div>
+  
+      <div class="bg-white flex flex-col" v-if="tasks.length">
+        <template key="task.id" v-for="task in tasks">
+          <div class="flex py-4 text-lg items-center">
+            <input class="mr-4 h-6 w-6" type="checkbox" @click="task.status = 'checked'">
+            <p class="w-full" :class="task.status === 'checked' ? 'line-through' : 'none'">{{task.text}}</p>
+            <button @click="del(task.id)" class="py-2 px-4 border-red-500 rounded-lg border-solid border-[1px] hover:bg-red-400 hover:text-white">Del</button>
+          </div>
+        </template>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import Posts from './components/Posts.vue'
-import Form from './components/Form.vue'
-
 export default {
-  components: {
-    Posts,
-    Form
-},
-    data() {
-      return {
-        posts: [
-          { id: 1, title: 'text1', description: 'Lorem ipsum dolor sit amet.' },
-          { id: 2, title: 'text2', description: 'Lorem ipsum dolor sit amet.' },
-          { id: 3, title: 'text3', description: 'Lorem ipsum dolor sit amet.' },
-          { id: 4, title: 'text4', description: 'Lorem ipsum dolor sit amet.' },
-        ],
-      }
+  name: 'App',
+  data() {
+    return {
+      newTask: '',
+      tasks: []
+    }
+  },
+  methods: {
+    add() {
+      const task = {id: Math.random().toFixed(4), text: this.newTask, status: null}
+      this.tasks.push(task)
+      this.newTask = ''
     },
-    methods: {
-      mounted() {
-        console.log(this.posts);
-      },
-      create(post) {
-        this.posts.push({...post})
-      },
-      remove(postId) {
-        // console.log(postId);
-        // console.log(this.posts[0]);
-        // const newList = this.posts.filter(({id}) => id !== postId)
-        // this.posts = {...newList}
-      }
+    del(id) {
+      const tasks = this.tasks.filter(task => task.id !== id )
+      this.tasks = tasks
     },
+    check(id) {
+      this.tasks
+    }
   }
+}
 </script>
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  font-size: 16px;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
 
-.wrap {
-  padding: 15px;
-  margin: 15px;
-}
+<style src="./style.css">
+
 </style>
