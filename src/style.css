@@ -3,5 +3,185 @@
 @tailwind utilities;
 
 body {
-  background-color: gray;
+  @apply p-4
 }
+
+* {
+  @apply duration-100
+}
+
+@layer components {
+  .baseBtn {
+    @apply text-xl w-fit py-3 px-4 bg-blue-700 rounded-lg text-white hover:bg-blue-600 active:bg-blue-800
+  }
+}
+
+
+/* <template>
+  <div class="app p-4">
+    <div class="flex">
+      
+      <!-- Tasks form -->
+      <div class="flex flex-col w-fit p-4 bg-white rounded-lg h-fit mr-10">
+        
+        <div class="bg-white flex flex-col my-4 w-fit mx-auto">
+          <div class="flex items-end">
+            <label class="w-full mr-4">
+              new task
+              <input
+                class="border-2 px-3 py-4 border-solid rounded-lg outline-none focus:border-blue-600 hover:border-blue-600 border-blue-400"
+                @keydown.enter="add"
+                type="text"
+                v-model="newTask"
+                >
+            </label>
+            <button class="text-3xl text-white px-10 py-[10px] bg-blue-600 hover:bg-blue-800 duration-150 border-solid border-2 rounded-lg" @click="add">+</button>
+          </div>
+          <label class="mt-2">
+            filter
+            <input v-model="filter" type="text" class="border-2 px-3 py-4 border-solid rounded-lg w-full mr-3 outline-none focus:border-blue-600 hover:border-blue-600 border-blue-400" />
+          </label>
+        </div>
+        
+      </div>
+      
+      <!-- Tasks table -->
+      <div :class="done.length && 'mr-10'" class="bg-white flex flex-col justify-between h-full w-full p-4 rounded-lg">
+        <p class="w-full px-16 py-4 border-2 border-b-0 text-center border-gray-100">Current</p>        
+        <div v-if="tasks.length">
+          <template key="task.id" v-for="task in paginatedTasks">
+            <div @click="changeStatus(task)" :class="done.includes(task) ? 'border-2 border-blue-900 px-2' : 'border-white'" class="my-2 rounded-lg cursor-pointer border-2 flex py-2 text-lg items-center">
+              <p class="w-full">{{task.text}}</p>
+              <p class="w-full">{{task.id}}</p>
+              <button @click.stop="del(task)" class="py-2 px-4 border-red-500 rounded-lg border-solid border-[1px] hover:bg-red-400 hover:text-white">Del</button>
+            </div>
+          </template>
+        </div>
+        <div v-if="tasks.length > 6" class="flex">
+          <button v-if="page > 1" @click="page = page - 1" class="text-3xl w-full text-white px-10 py-1 bg-blue-600 hover:bg-blue-800 duration-150 border-solid border-2 rounded-lg">prev</button>
+          <button v-if="page * 6 < tasks.length" @click="page = page + 1" class="text-3xl w-full text-white px-10 py-1 bg-blue-600 hover:bg-blue-800 duration-150 border-solid border-2 rounded-lg">next</button>
+        </div>
+      </div>
+      
+      <!-- Done tasks table -->
+      <div v-if="done.length" class="bg-white flex flex-col justify-between h-full w-full p-4 rounded-lg">
+        <p class="w-full px-16 py-4 border-2 border-b-0 text-center border-gray-100">Done</p>        
+          <template key="task.id" v-for="task in done">
+            <div class="my-2 rounded-lg flex py-2 text-lg justify-between">
+              <p>{{task.text}}</p>
+              <p>{{task.id}}</p>
+            </div>
+          </template>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import { generateTodos, subscribeToTodo, unSubscribeToTodo } from './api'
+
+export default {
+  name: 'App',
+  data() {
+    return {
+      rawHtml: '<h1>ddfgdsgdf</h1>',
+      newTask: '',
+      filter: '',
+
+      tasks: [],
+      done: [],
+
+      page: 1,
+    }
+  },
+  created() {
+    const windowData = Object.fromEntries(new URL(window.location).searchParams)
+    if(windowData) {
+      this.page = Number(windowData.page ?? 1)
+      this.filter = windowData.filter ?? ''
+    }
+
+    const todos = this.getFromLocalstorage()
+    if (todos && todos.length) {
+      this.tasks = todos
+      todos.forEach(todo => subscribeToTodo(todo, () => {}))
+    }
+    else {
+      const timer = setInterval(() => {
+        this.newTask = generateTodos()
+        this.add()
+      }, 500)
+
+      setTimeout(() => {
+        clearInterval(timer)
+      }, 15 * 500)
+    }
+  },
+
+  computed: {
+    filteredTasks() {
+      if(this.tasks.length > 0) {
+        return this.tasks.filter(({text}) => text.includes(this.filter))
+      }
+      return this.tasks
+    },
+    paginatedTasks() {
+      const start = 6 * (this.page - 1)
+      const end = this.page * 6
+      
+      if(this.tasks.length > 0) {
+        return this.filteredTasks.slice(start, end)
+      }
+      return this.tasks
+    }
+  },
+
+  methods: {
+    add() {
+      this.page = this.tasks.length
+      if(this.newTask) {
+        const task = {id: (100 *  Math.random()).toFixed(2), text: this.newTask}
+        this.tasks.push(task)
+        this.newTask = ''
+
+        this.setTolocalstorage()
+      }
+    },
+    changeStatus(task) {
+      if(!this.done.includes(task)) this.done.push(task)
+      else this.done = this.done.filter(item => item !== task)
+    },
+    del(taskToDel) {      
+      this.tasks = this.tasks.filter(task => task !== taskToDel)
+
+      if(this.done.includes(taskToDel)) this.done = this.done.filter(task => task !== taskToDel)
+    },
+    setTolocalstorage() {
+      localStorage.setItem('todoList', JSON.stringify(this.tasks))
+    },
+    getFromLocalstorage() {
+      return JSON.parse(localStorage.getItem('todoList'))
+    }
+  },
+
+  watch: {
+    tasks() {
+      this.setTolocalstorage()
+    },
+    paginatedTasks() {
+      if(this.paginatedTasks.length === 0 && this.page > 1) this.page -= 1
+    },
+    page() {
+      window.history.pushState(null, document.title, `${window.location.pathname}?page=${this.page}&filter=${this.filter}`)
+    },
+    filter() {
+      this.page = 1
+      window.history.pushState(null, document.title, `${window.location.pathname}?page=${this.page}&filter=${this.filter}`)
+    }
+  }
+}
+</script>
+
+<style src="./style.css">
+
+</style> */
