@@ -7,7 +7,7 @@
       @keydown.enter="add"
       placeholder="Например DOGE"
       type="text"
-      class="px-4 py-3 mr-4 border-[1px] mb-2 border-solid rounded-lg outline-none hover:border-blue-700 focus:border-blue-700 w-1/4"
+      class="px-4 py-3 uppercase mr-4 border-[1px] mb-2 border-solid rounded-lg outline-none hover:border-blue-700 focus:border-blue-700 w-1/4"
     >
     <button @click="add" class="baseBtn">Добавить +</button>
   </div>
@@ -30,18 +30,28 @@
   <!-- list -->
   <div v-if="tickers.length" class="border-y-2 border-gray-600 border-solid p-4 my-4 grid grid-cols-3 justify-items-center">
     <template key="ticker.name" v-for="ticker in paginatedTickers">
-      <div class="flex flex-col items-center gap-4 my-2">
+      <div class="flex flex-col items-center gap-4 my-2 p-4 rounded-lg border-2 cursor-pointer"
+        :class="selected === ticker ? 'border-red-300' : 'border-transparent'"
+        @click="select(ticker)">
         <p class="uppercase font-medium text-xl text-gray-500">{{ticker.name}} - USD</p>
         <p class="font-medium text-3xl">{{ticker.price}}</p>
         <button
           class="hover:bg-blue-500 hover:text-white px-3 py-2 border-blue-600 rounded-lg border-solid border-[1px]"
-          @click="del(ticker)"
+          @click.stop="del(ticker)"
         >
           Удалить
         </button>
       </div>
     </template>
   </div>
+
+  <!-- graph -->
+  <template v-if="(selected)">
+    <p class="text-xl font-bold">{{(selected.name)}}- USD</p>
+    <div ref="graph" class="w-full border-l-2 border-b-2 h-80 pt-10 border-black mt-11 flex items-end">
+      <p v-for="price in graph" :style="{height: `${price + 10}%`}" class="mx-[1px] w-10 rounded-t-lg first:ml-0 last:mr-0 bg-indigo-600 max-h-[99%]"></p>
+    </div>
+  </template>
 
 </template>
 
@@ -54,10 +64,13 @@ export default {
     return {
       tickerName: '',
       filter: '',
+      selected: null,
 
       tickers: [],
 
       page: 1,
+
+      graph: []
     }
   },
   created() {
@@ -70,18 +83,18 @@ export default {
     const tickers = this.getFromLocalstorage()
     if (tickers && tickers.length) {
       this.tickers = tickers
-      tickers.forEach(ticker => subscribeToTicker(ticker.name, newPrice => {
-        this.updateTicker(ticker, newPrice)
-      }))
+      tickers.forEach(ticker => subscribeToTicker(ticker.name, (newPrice) => {this.updateTicker(ticker, newPrice)}))
     }
   },
 
   computed: {
+    maxGraphElements() {
+      return this.graph.length / 40
+    },
     filteredTickers() {
       if(this.tickers.length > 0) {
-        return this.tickers.filter(({name}) => name.includes(this.filter))
+        return this.tickers.filter(({name}) => name.includes(this.filter.toUpperCase()))
       }
-      return this.tickers
     },
     paginatedTickers() {
       const start = 6 * (this.page - 1)
@@ -95,23 +108,42 @@ export default {
   },
 
   methods: {
+    log(data) {
+      console.log(data);
+    },
+    select(ticker) {
+      if(this.selected === ticker){
+        this.selected = null
+        this.graph = []
+      }
+      else {
+        this.selected = ticker
+        this.graph = []
+        this.graph.push(+String(ticker.price).slice(0, 2))
+      }
+    },
     updateTicker(ticker, newPrice) {
       this.tickers
-        .filter(t => t.name === ticker.name)
-        .forEach(t => t.price = newPrice)
+      .filter(t => t.name === ticker.name)
+      .forEach(t => t.price = newPrice)
       this.setTolocalstorage()
+      if(this.selected.name === ticker.name) {
+        if(this.maxGraphElements > this.$refs.graph.clientWidth) this.graph.shift()
+        if(this.selected.name === ticker.name) this.graph.push(+String(Math.random() * 100).slice(0, 2))
+      }
     },
-      add() {
+    add() {
       if(this.tickerName) {
         const currentTicker = {
           id: Date.now(),
-          name: this.tickerName,
-          price: '-'
+          name: this.tickerName.toUpperCase(),
+          price: '-',
+          status: null
         }
         
         this.tickers.push(currentTicker)
         
-        subscribeToTicker(this.tickerName, newPrice => {
+        subscribeToTicker(currentTicker, newPrice => {
           this.updateTicker(currentTicker.name, newPrice)
         })
         
@@ -120,7 +152,9 @@ export default {
       }
     },
     del(tickerToRemove) {
+      if(this.selected === tickerToRemove) this.selected = null
       this.tickers = this.tickers.filter(ticker => ticker !== tickerToRemove)
+      this.setTolocalstorage()
     },
     setTolocalstorage() {
       localStorage.setItem('tickerList', JSON.stringify(this.tickers))
