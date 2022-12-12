@@ -5,19 +5,20 @@ const BASE_URL = 'https://min-api.cryptocompare.com/data/pricemulti'
 
 function subscribeToTickerOnWs(ticker) {
   const timer = setInterval(async () => {
-    const data = await fetch(
-      `${BASE_URL}?fsyms=${ticker}&tsyms=USD&api_key=${API_KEY}`
-    );
-    const res = await data.json();
-    console.log(res);
-    if (res.Response === "Error") {
-    } else {
-      const currentTicker = Object.keys(res)[0];
-      const newPrice = res[currentTicker].USD;
-      const tickerHandlers = tickersSubscribers.get(currentTicker) ?? [];
+    // const data = await fetch(
+    //   `${BASE_URL}?fsyms=${ticker}&tsyms=USD&api_key=${API_KEY}`
+    // );
+    // const res = await data.json();
+    // console.log(res);
+    // if (res.Response === "Error") {
+    // } else {
+      // const currentTicker = Object.keys(res)[0];
+      // const newPrice = res[currentTicker].USD;
+      const newPrice = +String(Math.random() * 100).slice(0, 6)
+      const tickerHandlers = tickersSubscribers.get(ticker) ?? [];
       tickerHandlers.forEach((fn) => fn(newPrice));
-    }
-  }, 5000);
+    // }
+  }, 2000);
 }
 export function subscribeToTicker(ticker, cl) {
   let callbackList = tickersSubscribers.get(ticker) || []
