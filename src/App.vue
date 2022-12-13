@@ -57,13 +57,9 @@
   </div>
 
   <!-- graph -->
-  <Graph :selected="selected" :graph="graph" />
-  <!-- <div ref="graph" class="graph" v-if="(selected)">
-    <p class="text-xl font-bold">{{(selected.name)}} - USD</p>
-    <div class="w-full border-l-2 border-b-2 h-80 pt-10 border-black mt-11 flex items-end">
-      <p v-for="price in graph" :style="{height: `${price + 10}%`}" class="mx-[1px] w-[40px] rounded-t-lg first:ml-0 last:mr-0 bg-indigo-600 max-h-full"></p>
-    </div>
-  </div> -->
+  <div ref="graph">
+    <Graph :selected="selected" :graph="graph" />
+  </div>
 </template>
 
 <script>
@@ -171,16 +167,15 @@ export default {
       this.tickers
         .filter((t) => t.name === ticker.name)
         .forEach((t) => {
-          if (
-            Object.keys(this.selected).length &&
-            this.selected.name === ticker.name
-          ) {
-            this.graph.push(newPrice);
-            while (this.graph.length > this.maxGraphElements)
-              this.graph.shift();
-          }
           t.price = newPrice;
         });
+      if (
+        Object.keys(this.selected).length &&
+        this.selected.name === ticker.name
+      ) {
+        this.graph.push(newPrice);
+        while (this.graph.length > this.maxGraphElements) this.graph.shift();
+      }
       this.setTolocalstorage();
     },
     add(ticker) {
@@ -214,7 +209,7 @@ export default {
   watch: {
     selected() {
       this.graph = [];
-      this.$nextTick().then(this.calculateMaxGraphElements);
+      this.$nextTick().then(() => this.calculateMaxGraphElements());
     },
     add() {
       this.page = this.tickers.length;
